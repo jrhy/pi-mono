@@ -293,6 +293,9 @@ export class InteractiveMode {
 
 	// Response pager state
 	private turnStartChildIndex: number | undefined = undefined;
+	private responsePagerComponent: ResponsePagerComponent | undefined = undefined;
+	private responsePagerHandle: OverlayHandle | undefined = undefined;
+	private responsePagerDismissedForTurn = false;
 
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
@@ -2663,10 +2666,11 @@ export class InteractiveMode {
 		});
 	}
 
-	private maybeShowResponsePager(): void {
+	private maybeShowResponsePager(liveTailEnabled = true): void {
 		if (!this.settingsManager.getResponsePagerEnabled()) return;
-		if (this.ui.hasOverlay()) return;
+		if (this.responsePagerDismissedForTurn) return;
 		if (this.turnStartChildIndex === undefined) return;
+		if (this.ui.hasOverlay() && !this.responsePagerComponent) return;
 
 		const width = this.ui.terminal.columns;
 		const height = this.ui.terminal.rows;
@@ -2683,27 +2687,37 @@ export class InteractiveMode {
 			...this.footer.render(width),
 		].length;
 		const availableResponseLines = Math.max(1, height - bottomChromeLines);
-		if (lines.length <= availableResponseLines) return;
+		if (lines.length <= availableResponseLines) {
+			this.hideResponsePager(false);
+			return;
+		}
 
-		let handle: OverlayHandle | undefined;
-		const close = () => {
-			handle?.hide();
-			handle = undefined;
-		};
-		const pager = new ResponsePagerComponent(
-			lines,
-			this.keybindings,
-			() => this.ui.terminal.rows,
-			theme,
-			close,
-			() => this.ui.requestRender(),
-		);
-		handle = this.ui.showOverlay(pager, {
-			anchor: "top-left",
-			width: "100%",
-			maxHeight: "100%",
-			margin: 0,
-		});
+		if (!this.responsePagerComponent) {
+			this.responsePagerComponent = new ResponsePagerComponent(
+				lines,
+				liveTailEnabled,
+				this.keybindings,
+				() => this.ui.terminal.rows,
+				theme,
+				() => this.hideResponsePager(),
+				() => this.ui.requestRender(),
+			);
+			this.responsePagerHandle = this.ui.showOverlay(this.responsePagerComponent, {
+				anchor: "top-left",
+				width: "100%",
+				maxHeight: "100%",
+				margin: 0,
+			});
+		} else {
+			this.responsePagerComponent.setLines(lines, liveTailEnabled);
+		}
+	}
+
+	private hideResponsePager(dismissForTurn = true): void {
+		this.responsePagerHandle?.hide();
+		this.responsePagerHandle = undefined;
+		this.responsePagerComponent = undefined;
+		this.responsePagerDismissedForTurn = dismissForTurn;
 	}
 
 	private async handleEvent(event: AgentSessionEvent): Promise<void> {
@@ -2715,7 +2729,9 @@ export class InteractiveMode {
 
 		switch (event.type) {
 			case "agent_start":
+				this.hideResponsePager(false);
 				this.turnStartChildIndex = this.chatContainer.children.length;
+				this.responsePagerDismissedForTurn = false;
 				if (this.settingsManager.getShowTerminalProgress()) {
 					this.ui.terminal.setProgress(true);
 				}
@@ -2759,8 +2775,10 @@ export class InteractiveMode {
 				} else if (event.message.role === "user") {
 					this.addMessageToChat(event.message);
 					this.updatePendingMessagesDisplay();
+					this.maybeShowResponsePager();
 					this.ui.requestRender();
 				} else if (event.message.role === "assistant") {
+					this.maybeShowResponsePager();
 					this.streamingComponent = new AssistantMessageComponent(
 						undefined,
 						this.hideThinkingBlock,
@@ -2770,6 +2788,7 @@ export class InteractiveMode {
 					this.streamingMessage = event.message;
 					this.chatContainer.addChild(this.streamingComponent);
 					this.streamingComponent.updateContent(this.streamingMessage);
+					this.maybeShowResponsePager();
 					this.ui.requestRender();
 				}
 				break;
@@ -2805,6 +2824,7 @@ export class InteractiveMode {
 							}
 						}
 					}
+					this.maybeShowResponsePager();
 					this.ui.requestRender();
 				}
 				break;
@@ -2845,6 +2865,7 @@ export class InteractiveMode {
 					this.streamingMessage = undefined;
 					this.footer.invalidate();
 				}
+				this.maybeShowResponsePager();
 				this.ui.requestRender();
 				break;
 
@@ -2868,6 +2889,7 @@ export class InteractiveMode {
 					this.pendingTools.set(event.toolCallId, component);
 				}
 				component.markExecutionStarted();
+				this.maybeShowResponsePager();
 				this.ui.requestRender();
 				break;
 			}
@@ -2876,6 +2898,7 @@ export class InteractiveMode {
 				const component = this.pendingTools.get(event.toolCallId);
 				if (component) {
 					component.updateResult({ ...event.partialResult, isError: false }, true);
+					this.maybeShowResponsePager();
 					this.ui.requestRender();
 				}
 				break;
@@ -2886,6 +2909,7 @@ export class InteractiveMode {
 				if (component) {
 					component.updateResult({ ...event.result, isError: event.isError });
 					this.pendingTools.delete(event.toolCallId);
+					this.maybeShowResponsePager();
 					this.ui.requestRender();
 				}
 				break;
@@ -2909,7 +2933,7 @@ export class InteractiveMode {
 
 				await this.checkShutdownRequested();
 
-				this.maybeShowResponsePager();
+				this.maybeShowResponsePager(false);
 				this.turnStartChildIndex = undefined;
 				this.ui.requestRender();
 				break;

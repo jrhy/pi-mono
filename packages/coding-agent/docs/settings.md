@@ -47,7 +47,7 @@ Edit directly or use `/settings` for common options.
 | `editorPaddingX` | number | `0` | Horizontal padding for input editor (0-3) |
 | `autocompleteMaxVisible` | number | `5` | Max visible items in autocomplete dropdown (3-20) |
 | `showHardwareCursor` | boolean | `false` | Show terminal cursor |
-| `terminal.responsePager` | boolean | `false` | Pause oversized turn output in an interactive pager (includes the triggering prompt, assistant response, and tool output) |
+| `terminal.responsePager` | boolean | `false` | Pause oversized turn output in a live interactive pager that keeps the main page stable while showing the latest streaming lines at the bottom (includes the triggering prompt, assistant response, and tool output) |
 
 ### Compaction
 

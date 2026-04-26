@@ -142,6 +142,8 @@ The interface from top to bottom:
 - **Editor** - Where you type; border color indicates thinking level
 - **Footer** - Working directory, session name, total token/cache usage, cost, context usage, current model
 
+Enable `terminal.responsePager` to pause oversized turn output in a live pager that keeps the main page stable while showing the latest streaming lines at the bottom.
+
 The editor can be temporarily replaced by other UI, like built-in `/settings` or custom UI from extensions (e.g., a Q&A tool that lets the user answer model questions in a structured format). [Extensions](#extensions) can also replace the editor, add widgets above/below it, a status line, custom footer, or overlays.
 
 ### Editor

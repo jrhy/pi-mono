@@ -4,11 +4,16 @@ import type { KeybindingsManager } from "../../../core/keybindings.js";
 import type { Theme } from "../theme/theme.js";
 import { keyText } from "./keybinding-hints.js";
 
+const preferredLiveTailHeight = 4;
+const minRowsForLiveTail = 10;
+
 export class ResponsePagerComponent implements Component {
 	private scrollOffset = 0;
+	private visibleContentHeight = 1;
 
 	constructor(
-		private readonly lines: string[],
+		private lines: string[],
+		private liveTailEnabled: boolean,
 		private readonly keybindings: KeybindingsManager,
 		private readonly getTerminalRows: () => number,
 		private readonly theme: Theme,
@@ -18,7 +23,11 @@ export class ResponsePagerComponent implements Component {
 
 	render(width: number): string[] {
 		const height = Math.max(5, this.getTerminalRows());
-		const contentHeight = Math.max(1, height - 3);
+		const liveTailHeight = this.getLiveTailHeight(height);
+		const liveTailSeparatorHeight = liveTailHeight > 0 ? 1 : 0;
+		const contentHeight = Math.max(1, height - 2 - liveTailSeparatorHeight - liveTailHeight);
+		this.visibleContentHeight = contentHeight;
+
 		const maxOffset = Math.max(0, this.lines.length - contentHeight);
 		this.scrollOffset = Math.max(0, Math.min(this.scrollOffset, maxOffset));
 
@@ -38,15 +47,17 @@ export class ResponsePagerComponent implements Component {
 			`${keyText("app.pager.continue")} continue`,
 		].join(" · ");
 
-		return [
-			this.fitLine(this.theme.fg("accent", this.theme.bold(title)), width),
-			...visible,
-			this.fitLine(this.theme.fg("dim", help), width),
-		];
+		const rendered = [this.fitLine(this.theme.fg("accent", this.theme.bold(title)), width), ...visible];
+		if (liveTailHeight > 0) {
+			rendered.push(this.fitLine(this.theme.fg("dim", "─ Live output ─"), width));
+			rendered.push(...this.lines.slice(-liveTailHeight).map((line) => this.fitLine(line, width)));
+		}
+		rendered.push(this.fitLine(this.theme.fg("dim", help), width));
+		return rendered;
 	}
 
 	handleInput(data: string): void {
-		const pageSize = Math.max(1, this.getTerminalRows() - 4);
+		const pageSize = Math.max(1, this.visibleContentHeight - 1);
 		if (this.keybindings.matches(data, "app.pager.close") || this.keybindings.matches(data, "app.pager.continue")) {
 			this.onClose();
 			return;
@@ -71,12 +82,23 @@ export class ResponsePagerComponent implements Component {
 	invalidate(): void {}
 
 	private scrollBy(delta: number): void {
-		const contentHeight = Math.max(1, this.getTerminalRows() - 3);
-		const maxOffset = Math.max(0, this.lines.length - contentHeight);
+		const maxOffset = Math.max(0, this.lines.length - this.visibleContentHeight);
 		const nextOffset = Math.max(0, Math.min(this.scrollOffset + delta, maxOffset));
 		if (nextOffset === this.scrollOffset) return;
 		this.scrollOffset = nextOffset;
 		this.onChange();
+	}
+
+	setLines(lines: string[], liveTailEnabled: boolean): void {
+		this.lines = lines;
+		this.liveTailEnabled = liveTailEnabled;
+		this.onChange();
+	}
+
+	private getLiveTailHeight(height: number): number {
+		if (!this.liveTailEnabled) return 0;
+		if (height < minRowsForLiveTail) return 0;
+		return Math.min(preferredLiveTailHeight, Math.max(0, this.lines.length - 1));
 	}
 
 	private fitLine(line: string, width: number): string {
