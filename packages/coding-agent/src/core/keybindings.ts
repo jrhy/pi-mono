@@ -52,6 +52,12 @@ export interface AppKeybindings {
 	"app.tree.filter.all": true;
 	"app.tree.filter.cycleForward": true;
 	"app.tree.filter.cycleBackward": true;
+	"app.pager.lineUp": true;
+	"app.pager.lineDown": true;
+	"app.pager.pageUp": true;
+	"app.pager.pageDown": true;
+	"app.pager.close": true;
+	"app.pager.continue": true;
 }
 
 export type AppKeybinding = keyof AppKeybindings;
@@ -198,6 +204,30 @@ export const KEYBINDINGS = {
 	"app.tree.filter.cycleBackward": {
 		defaultKeys: "shift+ctrl+o",
 		description: "Tree filter: cycle backward",
+	},
+	"app.pager.lineUp": {
+		defaultKeys: ["up", "k"],
+		description: "Response pager: scroll up one line",
+	},
+	"app.pager.lineDown": {
+		defaultKeys: ["down", "j"],
+		description: "Response pager: scroll down one line",
+	},
+	"app.pager.pageUp": {
+		defaultKeys: ["pageUp", "ctrl+b"],
+		description: "Response pager: scroll up one page",
+	},
+	"app.pager.pageDown": {
+		defaultKeys: ["pageDown", "ctrl+f", "space"],
+		description: "Response pager: scroll down one page",
+	},
+	"app.pager.close": {
+		defaultKeys: ["escape", "q"],
+		description: "Response pager: close",
+	},
+	"app.pager.continue": {
+		defaultKeys: "enter",
+		description: "Response pager: continue",
 	},
 } as const satisfies KeybindingDefinitions;
 

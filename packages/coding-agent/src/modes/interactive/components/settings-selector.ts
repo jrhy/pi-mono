@@ -53,6 +53,7 @@ export interface SettingsConfig {
 	quietStartup: boolean;
 	clearOnShrink: boolean;
 	showTerminalProgress: boolean;
+	responsePager: boolean;
 }
 
 export interface SettingsCallbacks {
@@ -79,6 +80,7 @@ export interface SettingsCallbacks {
 	onQuietStartupChange: (enabled: boolean) => void;
 	onClearOnShrinkChange: (enabled: boolean) => void;
 	onShowTerminalProgressChange: (enabled: boolean) => void;
+	onResponsePagerChange: (enabled: boolean) => void;
 	onCancel: () => void;
 }
 
@@ -384,6 +386,16 @@ export class SettingsSelectorComponent extends Container {
 			values: ["true", "false"],
 		});
 
+		// Response pager toggle (insert after terminal-progress)
+		const terminalProgressIndex = items.findIndex((item) => item.id === "terminal-progress");
+		items.splice(terminalProgressIndex + 1, 0, {
+			id: "response-pager",
+			label: "Response pager",
+			description: "Pause oversized assistant turns in an interactive pager",
+			currentValue: config.responsePager ? "true" : "false",
+			values: ["true", "false"],
+		});
+
 		// Add borders
 		this.addChild(new DynamicBorder());
 
@@ -454,6 +466,9 @@ export class SettingsSelectorComponent extends Container {
 						break;
 					case "terminal-progress":
 						callbacks.onShowTerminalProgressChange(newValue === "true");
+						break;
+					case "response-pager":
+						callbacks.onResponsePagerChange(newValue === "true");
 						break;
 				}
 			},

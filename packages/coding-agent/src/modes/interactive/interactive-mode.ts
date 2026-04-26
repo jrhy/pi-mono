@@ -105,6 +105,7 @@ import { keyHint, keyText, rawKeyHint } from "./components/keybinding-hints.js";
 import { LoginDialogComponent } from "./components/login-dialog.js";
 import { ModelSelectorComponent } from "./components/model-selector.js";
 import { type AuthSelectorProvider, OAuthSelectorComponent } from "./components/oauth-selector.js";
+import { ResponsePagerComponent } from "./components/response-pager.js";
 import { ScopedModelsSelectorComponent } from "./components/scoped-models-selector.js";
 import { SessionSelectorComponent } from "./components/session-selector.js";
 import { SettingsSelectorComponent } from "./components/settings-selector.js";
@@ -289,6 +290,9 @@ export class InteractiveMode {
 
 	// Thinking block visibility state
 	private hideThinkingBlock = false;
+
+	// Response pager state
+	private turnStartChildIndex: number | undefined = undefined;
 
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
@@ -2659,6 +2663,49 @@ export class InteractiveMode {
 		});
 	}
 
+	private maybeShowResponsePager(): void {
+		if (!this.settingsManager.getResponsePagerEnabled()) return;
+		if (this.ui.hasOverlay()) return;
+		if (this.turnStartChildIndex === undefined) return;
+
+		const width = this.ui.terminal.columns;
+		const height = this.ui.terminal.rows;
+		const turnComponents = this.chatContainer.children.slice(this.turnStartChildIndex);
+		const lines = turnComponents.flatMap((component) => component.render(width));
+		if (lines.length === 0) return;
+
+		const bottomChromeLines = [
+			...this.pendingMessagesContainer.render(width),
+			...this.statusContainer.render(width),
+			...this.widgetContainerAbove.render(width),
+			...this.editorContainer.render(width),
+			...this.widgetContainerBelow.render(width),
+			...this.footer.render(width),
+		].length;
+		const availableResponseLines = Math.max(1, height - bottomChromeLines);
+		if (lines.length <= availableResponseLines) return;
+
+		let handle: OverlayHandle | undefined;
+		const close = () => {
+			handle?.hide();
+			handle = undefined;
+		};
+		const pager = new ResponsePagerComponent(
+			lines,
+			this.keybindings,
+			() => this.ui.terminal.rows,
+			theme,
+			close,
+			() => this.ui.requestRender(),
+		);
+		handle = this.ui.showOverlay(pager, {
+			anchor: "top-left",
+			width: "100%",
+			maxHeight: "100%",
+			margin: 0,
+		});
+	}
+
 	private async handleEvent(event: AgentSessionEvent): Promise<void> {
 		if (!this.isInitialized) {
 			await this.init();
@@ -2668,6 +2715,7 @@ export class InteractiveMode {
 
 		switch (event.type) {
 			case "agent_start":
+				this.turnStartChildIndex = this.chatContainer.children.length;
 				if (this.settingsManager.getShowTerminalProgress()) {
 					this.ui.terminal.setProgress(true);
 				}
@@ -2861,6 +2909,8 @@ export class InteractiveMode {
 
 				await this.checkShutdownRequested();
 
+				this.maybeShowResponsePager();
+				this.turnStartChildIndex = undefined;
 				this.ui.requestRender();
 				break;
 
@@ -3788,6 +3838,7 @@ export class InteractiveMode {
 					quietStartup: this.settingsManager.getQuietStartup(),
 					clearOnShrink: this.settingsManager.getClearOnShrink(),
 					showTerminalProgress: this.settingsManager.getShowTerminalProgress(),
+					responsePager: this.settingsManager.getResponsePagerEnabled(),
 				},
 				{
 					onAutoCompactChange: (enabled) => {
@@ -3900,6 +3951,9 @@ export class InteractiveMode {
 					},
 					onShowTerminalProgressChange: (enabled) => {
 						this.settingsManager.setShowTerminalProgress(enabled);
+					},
+					onResponsePagerChange: (enabled) => {
+						this.settingsManager.setResponsePagerEnabled(enabled);
 					},
 					onCancel: () => {
 						done();

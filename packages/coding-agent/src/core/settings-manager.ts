@@ -34,6 +34,7 @@ export interface TerminalSettings {
 	imageWidthCells?: number; // default: 60 (preferred inline image width in terminal cells)
 	clearOnShrink?: boolean; // default: false (clear empty rows when content shrinks)
 	showTerminalProgress?: boolean; // default: false (OSC 9;4 terminal progress indicators)
+	responsePager?: boolean; // default: false (pause oversized assistant turns in an interactive pager)
 }
 
 export interface ImageSettings {
@@ -955,6 +956,20 @@ export class SettingsManager {
 		}
 		this.globalSettings.terminal.showTerminalProgress = enabled;
 		this.markModified("terminal", "showTerminalProgress");
+		this.save();
+	}
+
+	getResponsePagerEnabled(): boolean {
+		// TODO: Review the final config shape before polishing this feature for upstream.
+		return this.settings.terminal?.responsePager ?? process.env.PI_RESPONSE_PAGER === "1";
+	}
+
+	setResponsePagerEnabled(enabled: boolean): void {
+		if (!this.globalSettings.terminal) {
+			this.globalSettings.terminal = {};
+		}
+		this.globalSettings.terminal.responsePager = enabled;
+		this.markModified("terminal", "responsePager");
 		this.save();
 	}
 
