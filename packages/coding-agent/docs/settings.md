@@ -47,6 +47,7 @@ Edit directly or use `/settings` for common options.
 | `editorPaddingX` | number | `0` | Horizontal padding for input editor (0-3) |
 | `autocompleteMaxVisible` | number | `5` | Max visible items in autocomplete dropdown (3-20) |
 | `showHardwareCursor` | boolean | `false` | Show terminal cursor |
+| `terminal.responsePager` | boolean | `false` | Pause oversized turn output in a live interactive pager that keeps the main page stable while showing the latest streaming lines at the bottom (includes the triggering prompt, assistant response, and tool output) |
 
 ### Compaction
 
@@ -116,6 +117,7 @@ When a provider requests a retry delay longer than `retry.provider.maxRetryDelay
 | `terminal.showImages` | boolean | `true` | Show images in terminal (if supported) |
 | `terminal.imageWidthCells` | number | `60` | Preferred inline image width in terminal cells |
 | `terminal.clearOnShrink` | boolean | `false` | Clear empty rows when content shrinks (can cause flicker) |
+| `terminal.responsePager` | boolean | `false` | Pause oversized assistant turns in an interactive pager |
 | `images.autoResize` | boolean | `true` | Resize images to 2000x2000 max |
 | `images.blockImages` | boolean | `false` | Block all images from being sent to LLM |
 

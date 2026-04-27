@@ -122,6 +122,17 @@ Modifier combinations: `ctrl+shift+x`, `alt+ctrl+x`, `ctrl+shift+alt+x`, `ctrl+1
 | `app.message.followUp` | `alt+enter` | Queue follow-up message |
 | `app.message.dequeue` | `alt+up` | Restore queued messages to editor |
 
+### Response Pager
+
+| Keybinding id | Default | Description |
+|--------|---------|-------------|
+| `app.pager.lineUp` | `up`, `k` | Scroll up one line |
+| `app.pager.lineDown` | `down`, `j` | Scroll down one line |
+| `app.pager.pageUp` | `pageUp`, `ctrl+b` | Scroll up one page |
+| `app.pager.pageDown` | `pageDown`, `ctrl+f`, `space` | Scroll down one page |
+| `app.pager.close` | `escape`, `q` | Close the pager |
+| `app.pager.continue` | `enter` | Close the pager and continue |
+
 ### Tree Navigation
 
 | Keybinding id | Default | Description |
